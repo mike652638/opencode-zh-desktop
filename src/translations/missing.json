@@ -1,0 +1,366 @@
+[
+  {
+    "key": "command.category.mcp",
+    "enValue": "MCP"
+  },
+  {
+    "key": "command.prompt.mode.shell",
+    "enValue": "Shell"
+  },
+  {
+    "key": "command.prompt.mode.normal",
+    "enValue": "Prompt"
+  },
+  {
+    "key": "dialog.provider.custom.label",
+    "enValue": "Custom OpenAI-compatible provider"
+  },
+  {
+    "key": "dialog.model.unpaid.viewMoreProviders",
+    "enValue": "See 70+ more providers"
+  },
+  {
+    "key": "provider.connect.opencodeZen.visit.link",
+    "enValue": "opencode.ai/zen"
+  },
+  {
+    "key": "provider.custom.field.providerID.placeholder",
+    "enValue": "myprovider"
+  },
+  {
+    "key": "provider.custom.field.baseURL.placeholder",
+    "enValue": "https://api.myprovider.com/v1"
+  },
+  {
+    "key": "provider.custom.models.id.label",
+    "enValue": "ID"
+  },
+  {
+    "key": "provider.custom.models.id.placeholder",
+    "enValue": "model-id"
+  },
+  {
+    "key": "provider.custom.headers.key.placeholder",
+    "enValue": "Header-Name"
+  },
+  {
+    "key": "provider.custom.headers.value.placeholder",
+    "enValue": "value"
+  },
+  {
+    "key": "model.provider.anthropic",
+    "enValue": "Anthropic"
+  },
+  {
+    "key": "model.provider.openai",
+    "enValue": "OpenAI"
+  },
+  {
+    "key": "model.provider.google",
+    "enValue": "Google"
+  },
+  {
+    "key": "model.provider.xai",
+    "enValue": "xAI"
+  },
+  {
+    "key": "model.provider.meta",
+    "enValue": "Meta"
+  },
+  {
+    "key": "model.input.pdf",
+    "enValue": "pdf"
+  },
+  {
+    "key": "common.loading.ellipsis",
+    "enValue": "..."
+  },
+  {
+    "key": "prompt.mode.shell",
+    "enValue": "Shell"
+  },
+  {
+    "key": "prompt.mode.normal",
+    "enValue": "Prompt"
+  },
+  {
+    "key": "prompt.slash.badge.mcp",
+    "enValue": "mcp"
+  },
+  {
+    "key": "dialog.mcp.title",
+    "enValue": "MCPs"
+  },
+  {
+    "key": "dialog.server.add.placeholder",
+    "enValue": "http://localhost:4096"
+  },
+  {
+    "key": "dialog.server.add.namePlaceholder",
+    "enValue": "Localhost"
+  },
+  {
+    "key": "wsl.server.label",
+    "enValue": "WSL"
+  },
+  {
+    "key": "wsl.onboarding.step.opencode",
+    "enValue": "OpenCode"
+  },
+  {
+    "key": "language.en",
+    "enValue": "English"
+  },
+  {
+    "key": "language.zh",
+    "enValue": "简体中文"
+  },
+  {
+    "key": "language.zht",
+    "enValue": "繁體中文"
+  },
+  {
+    "key": "language.ko",
+    "enValue": "한국어"
+  },
+  {
+    "key": "language.de",
+    "enValue": "Deutsch"
+  },
+  {
+    "key": "language.es",
+    "enValue": "Español"
+  },
+  {
+    "key": "language.fr",
+    "enValue": "Français"
+  },
+  {
+    "key": "language.da",
+    "enValue": "Dansk"
+  },
+  {
+    "key": "language.ja",
+    "enValue": "日本語"
+  },
+  {
+    "key": "language.pl",
+    "enValue": "Polski"
+  },
+  {
+    "key": "language.ru",
+    "enValue": "Русский"
+  },
+  {
+    "key": "language.ar",
+    "enValue": "العربية"
+  },
+  {
+    "key": "language.no",
+    "enValue": "Norsk"
+  },
+  {
+    "key": "language.br",
+    "enValue": "Português (Brasil)"
+  },
+  {
+    "key": "language.bs",
+    "enValue": "Bosanski"
+  },
+  {
+    "key": "language.uk",
+    "enValue": "Українська"
+  },
+  {
+    "key": "language.th",
+    "enValue": "ไทย"
+  },
+  {
+    "key": "language.tr",
+    "enValue": "Türkçe"
+  },
+  {
+    "key": "session.header.reveal.finder",
+    "enValue": "Reveal in Finder"
+  },
+  {
+    "key": "session.header.reveal.fileExplorer",
+    "enValue": "Reveal in File Explorer"
+  },
+  {
+    "key": "session.header.reveal.containingFolder",
+    "enValue": "Open containing folder"
+  },
+  {
+    "key": "session.header.open.app.vscode",
+    "enValue": "VS Code"
+  },
+  {
+    "key": "session.header.open.app.cursor",
+    "enValue": "Cursor"
+  },
+  {
+    "key": "session.header.open.app.zed",
+    "enValue": "Zed"
+  },
+  {
+    "key": "session.header.open.app.textmate",
+    "enValue": "TextMate"
+  },
+  {
+    "key": "session.header.open.app.antigravity",
+    "enValue": "Antigravity"
+  },
+  {
+    "key": "session.header.open.app.iterm2",
+    "enValue": "iTerm2"
+  },
+  {
+    "key": "session.header.open.app.ghostty",
+    "enValue": "Ghostty"
+  },
+  {
+    "key": "session.header.open.app.warp",
+    "enValue": "Warp"
+  },
+  {
+    "key": "session.header.open.app.xcode",
+    "enValue": "Xcode"
+  },
+  {
+    "key": "session.header.open.app.androidStudio",
+    "enValue": "Android Studio"
+  },
+  {
+    "key": "session.header.open.app.powershell",
+    "enValue": "PowerShell"
+  },
+  {
+    "key": "session.header.open.app.sublimeText",
+    "enValue": "Sublime Text"
+  },
+  {
+    "key": "status.popover.tab.mcp",
+    "enValue": "MCP"
+  },
+  {
+    "key": "status.popover.tab.lsp",
+    "enValue": "LSP"
+  },
+  {
+    "key": "lsp.label.connected",
+    "enValue": "{{count}} LSP"
+  },
+  {
+    "key": "common.key.esc",
+    "enValue": "ESC"
+  },
+  {
+    "key": "common.key.ctrl",
+    "enValue": "Ctrl"
+  },
+  {
+    "key": "common.key.alt",
+    "enValue": "Alt"
+  },
+  {
+    "key": "common.key.shift",
+    "enValue": "Shift"
+  },
+  {
+    "key": "common.key.meta",
+    "enValue": "Meta"
+  },
+  {
+    "key": "common.key.tab",
+    "enValue": "Tab"
+  },
+  {
+    "key": "common.key.delete",
+    "enValue": "Delete"
+  },
+  {
+    "key": "common.key.home",
+    "enValue": "Home"
+  },
+  {
+    "key": "common.key.end",
+    "enValue": "End"
+  },
+  {
+    "key": "common.key.pageUp",
+    "enValue": "Page Up"
+  },
+  {
+    "key": "common.key.pageDown",
+    "enValue": "Page Down"
+  },
+  {
+    "key": "common.key.insert",
+    "enValue": "Insert"
+  },
+  {
+    "key": "debugBar.nav.label",
+    "enValue": "NAV"
+  },
+  {
+    "key": "debugBar.fps.label",
+    "enValue": "FPS"
+  },
+  {
+    "key": "debugBar.frame.label",
+    "enValue": "FRAME"
+  },
+  {
+    "key": "debugBar.jank.label",
+    "enValue": "JANK"
+  },
+  {
+    "key": "debugBar.long.label",
+    "enValue": "LONG"
+  },
+  {
+    "key": "debugBar.delay.label",
+    "enValue": "DELAY"
+  },
+  {
+    "key": "debugBar.inp.label",
+    "enValue": "INP"
+  },
+  {
+    "key": "debugBar.cls.label",
+    "enValue": "CLS"
+  },
+  {
+    "key": "debugBar.mem.label",
+    "enValue": "MEM"
+  },
+  {
+    "key": "app.name.desktop",
+    "enValue": "OpenCode Desktop"
+  },
+  {
+    "key": "settings.desktop.section.wsl",
+    "enValue": "WSL"
+  },
+  {
+    "key": "settings.mcp.title",
+    "enValue": "MCP"
+  },
+  {
+    "key": "settings.permissions.tool.glob.title",
+    "enValue": "Glob"
+  },
+  {
+    "key": "settings.permissions.tool.grep.title",
+    "enValue": "Grep"
+  },
+  {
+    "key": "settings.permissions.tool.bash.title",
+    "enValue": "Bash"
+  },
+  {
+    "key": "settings.permissions.tool.lsp.title",
+    "enValue": "LSP"
+  }
+]

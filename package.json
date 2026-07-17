@@ -1,0 +1,35 @@
+{
+  "name": "opencode-zh-desktop",
+  "version": "0.1.0",
+  "description": "CDP-based Chinese locale injection for OpenCode Desktop — patches the Electron renderer at runtime via Chrome DevTools Protocol",
+  "type": "module",
+  "license": "MIT",
+  "keywords": ["opencode", "desktop", "i18n", "chinese", "cdp", "electron"],
+  "bin": {
+    "opencode-zh-desktop": "bin/opencode-zh-desktop.js"
+  },
+  "main": "dist/inject.js",
+  "files": [
+    "dist",
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "clean": "node -e \"const fs=require('fs');fs.rmSync('./dist',{recursive:true,force:true})\"",
+    "prebuild": "node -e \"const fs=require('fs');const p=require('path');const src=p.join(process.cwd(),'src','injection','script.js');const dst=p.join(process.cwd(),'dist','injection','script.js');fs.mkdirSync(p.dirname(dst),{recursive:true});fs.copyFileSync(src,dst);console.log('Copied injection script')\"",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "start": "node bin/opencode-zh-desktop.js",
+    "build-map": "bun run scripts/build-map.ts",
+    "rebuild": "npm run clean && npm run prebuild && npm run build && echo Build complete",
+    "prepublishOnly": "npm run build"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
+  }
+}
