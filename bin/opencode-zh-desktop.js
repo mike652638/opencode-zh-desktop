@@ -12,10 +12,16 @@
  *   --help, -h          Show help
  */
 
+import { readFileSync } from "node:fs"
+import { fileURLToPath } from "node:url"
+import { dirname, join } from "node:path"
 import { launchDesktop, findDesktopExe } from "../dist/launcher.js"
 import { findRendererTarget, connectCDP, injectPersistentScript, evaluateScript, enableDomains, setupConsoleCapture } from "../dist/connector.js"
 import { buildInjectionScript } from "../dist/inject.js"
 import { startDaemon } from "../dist/daemon.js"
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const pkg = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf8"))
 
 async function main() {
   const args = process.argv.slice(2)
@@ -27,7 +33,7 @@ async function main() {
   }
 
   if (opts.version) {
-    console.log("opencode-zh-desktop v0.1.0")
+    console.log("opencode-zh-desktop v" + pkg.version)
     process.exit(0)
   }
 
