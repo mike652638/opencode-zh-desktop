@@ -9,6 +9,7 @@
  *   --port <number>     CDP port (default: 19222)
  *   --exe <path>        Path to OpenCode Desktop executable
  *   --no-relaunch       Don't kill/relaunch, connect to existing instance
+ *   --force-relaunch    Force-kill and relaunch even when CDP is available
  *   --help, -h          Show help
  */
 
@@ -48,11 +49,12 @@ async function main() {
 
   if (!opts.noRelaunch) {
     console.log("Step 1: Launching OpenCode Desktop with CDP...")
-    const result = await launchDesktop({ port, exePath: opts.exe })
+    const result = await launchDesktop({ port, exePath: opts.exe, forceRelaunch: opts.forceRelaunch })
     port = result.port
-    console.log("  PID:", result.pid)
+    if (result.reused) console.log("  Reused existing Desktop instance")
+    else console.log("  PID:", result.pid)
     console.log("  Port:", port)
-    console.log("  Exe:", result.exePath)
+    if (result.exePath) console.log("  Exe:", result.exePath)
   } else {
     console.log("Step 1: Connecting to existing instance on port", port)
   }
@@ -99,7 +101,7 @@ async function main() {
 }
 
 function parseArgs(args) {
-  const opts = { port: 19222, exe: undefined, noRelaunch: false, help: false, daemon: false, version: false }
+  const opts = { port: 19222, exe: undefined, noRelaunch: false, forceRelaunch: false, help: false, daemon: false, version: false }
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
       case "--port":
@@ -110,6 +112,9 @@ function parseArgs(args) {
         break
       case "--no-relaunch":
         opts.noRelaunch = true
+        break
+      case "--force-relaunch":
+        opts.forceRelaunch = true
         break
       case "--daemon":
         opts.daemon = true
@@ -138,6 +143,7 @@ Options:
   --port <number>     CDP port (default: 19222)
   --exe <path>        Path to OpenCode Desktop executable
   --no-relaunch       Connect to existing instance instead of relaunching
+  --force-relaunch    Force-kill and relaunch even when CDP is available
   --daemon            Run in daemon mode (auto-restart, hot-reload, reconnect)
   --version, -v       Show version
   --help, -h          Show this help

@@ -81,6 +81,7 @@ opencode-zh-desktop --daemon
 | `--port <n>` | CDP 调试端口 | `19222` |
 | `--exe <path>` | OpenCode.exe 路径 | 自动探测 |
 | `--no-relaunch` | 连接已运行实例，不重启 | `false` |
+| `--force-relaunch` | 即使 CDP 已可用也强制重启 | `false` |
 | `--daemon` | 守护进程，自动重启 Desktop | `false` |
 | `--version`, `-v` | 显示版本号 | — |
 
@@ -136,6 +137,7 @@ opencode-zh-desktop --daemon
 - **一次性**：不加 `--daemon` 时，页面重载后注入丢失
 - **Electron 菜单**：Go / Window 菜单为本地 OS 渲染，不在 DOM 中
 - **版本依赖**：上游 UI 变更可能破坏文本匹配
+- **终端安全**：检测到现有 CDP 实例时默认复用，不会重复重启 Desktop，避免影响正在运行的 TUI；仅在明确需要时使用 `--force-relaunch`
 
 ## 开发
 

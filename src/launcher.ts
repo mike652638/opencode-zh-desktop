@@ -16,12 +16,14 @@ export interface LaunchOptions {
   port?: number
   exePath?: string
   timeout?: number
+  forceRelaunch?: boolean
 }
 
 export interface LaunchResult {
   pid: number
   port: number
   exePath: string
+  reused: boolean
 }
 
 /** Find the OpenCode Desktop executable on the current platform. */
@@ -106,6 +108,17 @@ export async function launchDesktop(opts: LaunchOptions = {}): Promise<LaunchRes
   const port = opts.port ?? 19222
   const timeout = opts.timeout ?? 30000
 
+  // Reusing a live CDP instance avoids restarting Desktop's PTY service.
+  // Restarting it while the TUI is active can leak mouse/VT sequences.
+  if (!opts.forceRelaunch && await isCDPAvailable(port)) {
+    return {
+      pid: 0,
+      port,
+      exePath: opts.exePath ?? "",
+      reused: true,
+    }
+  }
+
   let exePath: string | undefined = opts.exePath
   if (!exePath) {
     const found = await findDesktopExe()
@@ -133,6 +146,19 @@ export async function launchDesktop(opts: LaunchOptions = {}): Promise<LaunchRes
     pid: child.pid ?? 0,
     port,
     exePath,
+    reused: false,
+  }
+}
+
+/** Check whether an existing Desktop instance exposes the requested CDP port. */
+async function isCDPAvailable(port: number): Promise<boolean> {
+  try {
+    const res = await fetch(`http://localhost:${port}/json/version`, {
+      signal: AbortSignal.timeout(1000),
+    })
+    return res.ok
+  } catch {
+    return false
   }
 }
 

@@ -81,6 +81,7 @@ opencode-zh-desktop --daemon
 | `--port <n>` | CDP debugging port | `19222` |
 | `--exe <path>` | Path to OpenCode.exe | Auto-detected |
 | `--no-relaunch` | Connect to running instance, don't restart | `false` |
+| `--force-relaunch` | Force restart even when CDP is available | `false` |
 | `--daemon` | Keep alive, auto-restart Desktop | `false` |
 | `--version`, `-v` | Show version | — |
 
@@ -136,6 +137,7 @@ Uses **Chrome DevTools Protocol** to attach to OpenCode Desktop's Electron rende
 - **One-shot**: Without `--daemon`, injections are lost on page reload
 - **Electron menus**: The Go / Window menu is native OS rendering, not DOM
 - **Version dependent**: Upstream UI changes may break text matching
+- **Terminal safety**: An existing CDP instance is reused by default, avoiding Desktop restarts that can disturb an active TUI; use `--force-relaunch` only when explicitly needed
 
 ## Development
 
