@@ -10,7 +10,7 @@
 
 [opencode-zh-plugin](https://www.npmjs.com/package/opencode-zh-plugin) 的配套包（负责 AI 回复语言中文化）。
 
-[English](./README.en.md)
+[English](https://github.com/mike652638/opencode-zh-desktop/blob/main/README.en.md)
 
 ## 效果预览
 

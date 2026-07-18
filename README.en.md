@@ -10,7 +10,7 @@ CDP-based Chinese locale injection for [OpenCode Desktop](https://opencode.ai/do
 
 Companion package to [opencode-zh-plugin](https://www.npmjs.com/package/opencode-zh-plugin) (server-side AI response localization).
 
-[中文文档](./README.md)
+[中文文档](https://github.com/mike652638/opencode-zh-desktop/blob/main/README.md)
 
 ## Screenshots
 
