@@ -74,6 +74,41 @@ Desktop 退出后自动重启并重新注入：
 opencode-zh-desktop --daemon
 ```
 
+### 随 OpenCode Desktop 自动启动
+
+OpenCode Desktop 必须在启动时带上 `--remote-debugging-port`，工具才能通过 CDP 注入翻译。因此，不能先用普通方式启动 Desktop，再可靠地附加注入。
+
+最简单的方式是修改 OpenCode Desktop 快捷方式：
+
+1. 右键 OpenCode Desktop 快捷方式，选择“属性”。
+2. 将“目标”改为全局 npm 命令的路径，例如：
+
+   ```text
+   C:\Users\<用户名>\AppData\Roaming\npm\opencode-zh-desktop.cmd
+   ```
+
+3. 在目标后追加参数：
+
+   ```text
+   --daemon
+   ```
+
+最终效果应等价于：
+
+```bash
+opencode-zh-desktop --daemon
+```
+
+之后通过该快捷方式启动时，守护进程会先以 CDP 模式启动 OpenCode Desktop，然后自动注入中文翻译；Desktop 崩溃或断线后也会自动重连。请关闭 OpenCode Desktop 原有的普通开机启动，避免普通启动路径与该快捷方式重复启动。
+
+如果直接修改快捷方式不方便，也可以在 Windows 终端中运行：
+
+```powershell
+opencode-zh-desktop --daemon
+```
+
+保持该进程运行即可获得相同效果。
+
 ### 命令行选项
 
 | 选项 | 说明 | 默认值 |
