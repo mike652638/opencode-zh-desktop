@@ -17,6 +17,7 @@ export interface LaunchOptions {
   exePath?: string
   timeout?: number
   forceRelaunch?: boolean
+  onExit?: (code: number | null, signal: NodeJS.Signals | null) => void
 }
 
 export interface LaunchResult {
@@ -138,6 +139,9 @@ export async function launchDesktop(opts: LaunchOptions = {}): Promise<LaunchRes
     stdio: "ignore",
     windowsHide: false,
   })
+  if (opts.onExit) {
+    child.once("exit", opts.onExit)
+  }
   child.unref()
 
   await waitForCDP(port, timeout)

@@ -74,6 +74,8 @@ Desktop 退出后自动重启并重新注入：
 opencode-zh-desktop --daemon
 ```
 
+守护进程会区分正常关闭和异常退出：通过窗口关闭按钮正常退出时，daemon 进入待机状态，不会重新启动 Desktop；如果 Desktop 崩溃或以非零退出码退出，则继续自动重启并重新注入。之后再次通过配置好的 OpenCode 快捷方式启动 Desktop，daemon 会自动恢复注入。
+
 ### 随 OpenCode Desktop 自动启动
 
 OpenCode Desktop 必须在启动时带上 `--remote-debugging-port`，工具才能通过 CDP 注入翻译。因此，不能先用普通方式启动 Desktop，再可靠地附加注入。

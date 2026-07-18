@@ -4,9 +4,10 @@
  * auto-restarts on crash, and supports hot-reloading the translation script.
  */
 
-import { watch } from "node:fs"
+import { closeSync, existsSync, openSync, readFileSync, unlinkSync, watch, writeFileSync } from "node:fs"
 import process from "node:process"
 import path from "node:path"
+import os from "node:os"
 import { fileURLToPath } from "node:url"
 import { launchDesktop, waitForCDP } from "./launcher.js"
 
@@ -51,6 +52,79 @@ interface DaemonState {
 }
 
 const MAX_RESTART_FAILURES = 3
+
+interface DaemonLock {
+  path: string
+  wakePath: string
+  fd: number
+}
+
+class DaemonAlreadyRunningError extends Error {
+  constructor(public readonly port: number, public readonly ownerPid: number) {
+    super(`Another daemon is already running for CDP port ${port} (PID ${ownerPid})`)
+    this.name = "DaemonAlreadyRunningError"
+  }
+}
+
+function acquireDaemonLock(port: number): DaemonLock {
+  const lockPath = path.join(os.tmpdir(), `opencode-zh-desktop-${port}.lock`)
+
+  for (;;) {
+    try {
+      const fd = openSync(lockPath, "wx")
+      writeFileSync(fd, String(process.pid))
+      try { unlinkSync(`${lockPath}.wake`) } catch { /* no pending wake request */ }
+      return { path: lockPath, wakePath: `${lockPath}.wake`, fd }
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err
+
+      let ownerPid = 0
+      try {
+        ownerPid = Number.parseInt(readFileSync(lockPath, "utf8"), 10)
+      } catch {
+        // The lock may be between creation and PID write.
+      }
+
+      if (ownerPid <= 0) {
+        throw new Error(`Another daemon is starting for CDP port ${port}`)
+      }
+
+      try {
+        process.kill(ownerPid, 0)
+        throw new DaemonAlreadyRunningError(port, ownerPid)
+      } catch (probeErr) {
+        if (probeErr instanceof DaemonAlreadyRunningError) throw probeErr
+      }
+
+      if (!existsSync(lockPath)) continue
+      try {
+        unlinkSync(lockPath)
+      } catch {
+        throw new Error(`Another daemon is starting for CDP port ${port}`)
+      }
+    }
+  }
+}
+
+function releaseDaemonLock(lock: DaemonLock): void {
+  try { closeSync(lock.fd) } catch { /* already closed */ }
+  try { unlinkSync(lock.path) } catch { /* stale lock cleanup is best effort */ }
+}
+
+function requestDaemonWake(port: number): void {
+  const wakePath = path.join(os.tmpdir(), `opencode-zh-desktop-${port}.lock.wake`)
+  writeFileSync(wakePath, String(Date.now()))
+}
+
+function consumeDaemonWake(lock: DaemonLock): boolean {
+  if (!existsSync(lock.wakePath)) return false
+  try {
+    unlinkSync(lock.wakePath)
+    return true
+  } catch {
+    return false
+  }
+}
 
 async function checkCDPAlive(port: number): Promise<boolean> {
   try {
@@ -104,11 +178,11 @@ async function connectAndInject(state: DaemonState): Promise<CDPSession | null> 
 }
 
 function scheduleReconnect(state: DaemonState): void {
-  if (!state.running || state.session || state.restarting) return
+  if (!state.running || state.session || state.restarting || state.standby) return
 
   console.log(`[daemon] Reconnecting in ${state.reconnectDelay}ms...`)
   setTimeout(async () => {
-    if (!state.running || state.session || state.restarting) return
+    if (!state.running || state.session || state.restarting || state.standby) return
 
     const alive = await checkCDPAlive(state.port)
     if (!alive) {
@@ -128,7 +202,7 @@ function scheduleReconnect(state: DaemonState): void {
 }
 
 async function tryRestartDesktop(state: DaemonState): Promise<void> {
-  if (!state.running || state.restarting) return
+  if (!state.running || state.restarting || state.standby) return
   state.restarting = true
 
   try {
@@ -137,7 +211,11 @@ async function tryRestartDesktop(state: DaemonState): Promise<void> {
     if (!state.running) return
 
     console.log("[daemon] Restarting OpenCode Desktop...")
-    const result = await launchDesktop({ port: state.port, exePath: state.exePath })
+    const result = await launchDesktop({
+      port: state.port,
+      exePath: state.exePath,
+      onExit: (code, signal) => handleDesktopExit(state, code, signal),
+    })
     console.log("[daemon] Desktop restarted, PID:", result.pid)
     state.restartFailCount = 0
 
@@ -165,6 +243,26 @@ async function tryRestartDesktop(state: DaemonState): Promise<void> {
   } finally {
     state.restarting = false
   }
+}
+
+function handleDesktopExit(
+  state: DaemonState,
+  code: number | null,
+  signal: NodeJS.Signals | null,
+): void {
+  if (!state.running) return
+
+  if (code === 0 && signal === null) {
+    state.standby = true
+    state.session = null
+    console.log("[daemon] Desktop closed normally; auto-restart paused")
+    console.log("[daemon] Start OpenCode Desktop again to resume injection")
+    return
+  }
+
+  console.log(
+    `[daemon] Desktop exited unexpectedly (code: ${code ?? "null"}, signal: ${signal ?? "none"}); auto-restart remains enabled`,
+  )
 }
 
 function setupHotReload(state: DaemonState): void {
@@ -201,8 +299,20 @@ function setupHotReload(state: DaemonState): void {
 }
 
 export async function startDaemon(opts: DaemonOptions = {}): Promise<void> {
+  const port = opts.port ?? 19222
+  let lock: DaemonLock
+  try {
+    lock = acquireDaemonLock(port)
+  } catch (err) {
+    if (err instanceof DaemonAlreadyRunningError) {
+      requestDaemonWake(port)
+      console.log(`[daemon] Existing daemon found (PID ${err.ownerPid}); wake request sent`)
+      return
+    }
+    throw err
+  }
   const state: DaemonState = {
-    port: opts.port ?? 19222,
+    port,
     exePath: opts.exePath,
     pollInterval: opts.pollInterval ?? 5000,
     maxReconnectDelay: opts.maxReconnectDelay ?? 30000,
@@ -233,7 +343,11 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<void> {
   } else {
     console.log("[daemon] No Desktop instance found, launching...")
     try {
-      const result = await launchDesktop({ port: state.port, exePath: state.exePath })
+      const result = await launchDesktop({
+        port: state.port,
+        exePath: state.exePath,
+        onExit: (code, signal) => handleDesktopExit(state, code, signal),
+      })
       console.log("[daemon] Desktop launched, PID:", result.pid)
       await waitForCDP(state.port, 30000)
       const session = await connectAndInject(state)
@@ -254,6 +368,13 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<void> {
   const poll = async () => {
     if (!state.running) return
     try {
+      if (state.standby && consumeDaemonWake(lock)) {
+        console.log("[daemon] Wake request received; resuming Desktop monitoring")
+        state.standby = false
+        state.restartFailCount = 0
+        state.reconnectDelay = 1000
+      }
+
       const isAlive = await checkCDPAlive(state.port)
       if (isAlive) {
         if (state.standby) {
@@ -274,7 +395,7 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<void> {
       // Poll errors are non-fatal
     }
     if (state.running) {
-      setTimeout(poll, state.standby ? 30000 : state.pollInterval)
+      setTimeout(poll, state.standby ? 1000 : state.pollInterval)
     }
   }
   setTimeout(poll, state.pollInterval)
@@ -286,11 +407,13 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<void> {
     if (state.session) {
       try { state.session.close() } catch { /* ignore */ }
     }
+    releaseDaemonLock(lock)
     process.exit(0)
   }
 
   process.on("SIGINT", shutdown)
   process.on("SIGTERM", shutdown)
+  process.on("exit", () => releaseDaemonLock(lock))
 
   await new Promise(() => {})
 }

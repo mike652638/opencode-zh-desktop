@@ -119,6 +119,12 @@ function stripAnsi(str: string): string {
     .replace(/\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, "")
 }
 
+/** Ignore renderer noise that is expected while Desktop is restarting its PTY. */
+function isTransientRendererMessage(msg: string): boolean {
+  return msg.includes("Failed to update terminal Error: PTY session not found:")
+    || msg.includes("[ghostty-vt] warning(stream): unimplemented mode: 9001")
+}
+
 /** Subscribe to console and exception events from the renderer. */
 export function setupConsoleCapture(session: CDPSession): void {
   session.ws.addEventListener("message", (event) => {
@@ -127,7 +133,9 @@ export function setupConsoleCapture(session: CDPSession): void {
       const args = data.params?.args || []
       const raw = args.map((a: { value?: unknown; description?: string }) => a.value ?? a.description ?? "").join(" ")
       const msg = stripAnsi(String(raw))
-      if (msg.trim()) console.log("  [renderer console]", msg)
+      if (msg.trim() && !isTransientRendererMessage(msg)) {
+        console.log("  [renderer console]", msg)
+      }
     }
     if (data.method === "Runtime.exceptionThrown") {
       const details = data.params?.exceptionDetails
