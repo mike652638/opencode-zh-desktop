@@ -13,6 +13,33 @@
 
   var TRANSLATIONS = __TRANSLATIONS__;
 
+  var INJECTION_STATE_KEY = "__OPENCODE_ZH_INJECTION__";
+  var previousState = window[INJECTION_STATE_KEY];
+  if (previousState && typeof previousState.cleanup === "function") {
+    previousState.cleanup();
+  }
+
+  var observer = null;
+  var domReadyHandler = null;
+  var rescanTimers = [];
+  var injectionState = {
+    cleanup: function () {
+      if (observer) {
+        observer.disconnect();
+        observer = null;
+      }
+      if (domReadyHandler) {
+        document.removeEventListener("DOMContentLoaded", domReadyHandler);
+        domReadyHandler = null;
+      }
+      for (var i = 0; i < rescanTimers.length; i++) {
+        clearTimeout(rescanTimers[i]);
+      }
+      rescanTimers = [];
+    },
+  };
+  window[INJECTION_STATE_KEY] = injectionState;
+
   // Startup marker — appears in console before any try/catch
   console.log("[opencode-zh] ===== Injection script STARTED =====");
 
@@ -219,7 +246,7 @@
   }
 
   function startObserver() {
-    var observer = new MutationObserver(function (mutations) {
+    observer = new MutationObserver(function (mutations) {
       for (var i = 0; i < mutations.length; i++) {
         var m = mutations[i];
         if (m.type === "characterData") {
@@ -255,21 +282,26 @@
     }
   }
 
+  function scheduleRescan(delay) {
+    rescanTimers.push(setTimeout(rescan, delay));
+  }
+
   function init() {
     setLocale();
     if (document.body) {
       processTree(document.body);
       startObserver();
     } else {
-      document.addEventListener("DOMContentLoaded", function () {
+      domReadyHandler = function () {
         processTree(document.body);
         startObserver();
-      });
+      };
+      document.addEventListener("DOMContentLoaded", domReadyHandler);
     }
     // 延迟多次重扫描，捕获延迟渲染的组件（菜单、弹窗、虚拟 DOM 更新等）
-    setTimeout(rescan, 500);
-    setTimeout(rescan, 1500);
-    setTimeout(rescan, 3000);
+    scheduleRescan(500);
+    scheduleRescan(1500);
+    scheduleRescan(3000);
   }
 
   init();

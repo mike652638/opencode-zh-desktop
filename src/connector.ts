@@ -89,6 +89,23 @@ export async function injectPersistentScript(session: CDPSession, script: string
   return result.identifier
 }
 
+/** Remove a previously registered script from future documents. */
+export async function removePersistentScript(session: CDPSession, identifier: string): Promise<void> {
+  await session.send("Page.removeScriptToEvaluateOnNewDocument", { identifier })
+}
+
+/** Remove all matching translation scripts left by previous daemon instances. */
+export async function removeMatchingPersistentScripts(session: CDPSession, marker: string): Promise<void> {
+  const result = await session.send<{
+    scripts: Array<{ identifier: string; source: string }>
+  }>("Page.getScriptsToEvaluateOnNewDocument")
+  for (const script of result.scripts) {
+    if (script.source.includes(marker)) {
+      await removePersistentScript(session, script.identifier)
+    }
+  }
+}
+
 /** Evaluate a script in the current page context. */
 export async function evaluateScript<T = unknown>(session: CDPSession, expression: string): Promise<T> {
   const result = await session.send<{
@@ -125,8 +142,12 @@ function isTransientRendererMessage(msg: string): boolean {
     || msg.includes("[ghostty-vt] warning(stream): unimplemented mode: 9001")
 }
 
+const consoleCaptureSessions = new WeakSet<CDPSession>()
+
 /** Subscribe to console and exception events from the renderer. */
 export function setupConsoleCapture(session: CDPSession): void {
+  if (consoleCaptureSessions.has(session)) return
+  consoleCaptureSessions.add(session)
   session.ws.addEventListener("message", (event) => {
     const data = JSON.parse(event.data as string)
     if (data.method === "Runtime.consoleAPICalled") {

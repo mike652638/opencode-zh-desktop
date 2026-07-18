@@ -17,6 +17,8 @@ import {
   findRendererTarget,
   connectCDP,
   injectPersistentScript,
+  removeMatchingPersistentScripts,
+  removePersistentScript,
   evaluateScript,
   enableDomains,
   setupConsoleCapture,
@@ -49,6 +51,10 @@ interface DaemonState {
   standby: boolean
   /** Mutex: prevents concurrent restart attempts from poll timer + scheduleReconnect */
   restarting: boolean
+  /** Mutex: prevents overlapping renderer connection and injection attempts. */
+  connecting: boolean
+  /** Persistent script registered on the current renderer target. */
+  persistentScriptId: string | null
 }
 
 const MAX_RESTART_FAILURES = 3
@@ -138,19 +144,35 @@ async function checkCDPAlive(port: number): Promise<boolean> {
 }
 
 async function connectAndInject(state: DaemonState): Promise<CDPSession | null> {
+  if (state.connecting) return null
+  state.connecting = true
+  let session: CDPSession | null = null
   try {
     console.log("[daemon] Finding renderer target...")
     const target = await findRendererTarget(state.port, 10000)
 
     console.log("[daemon] Connecting via WebSocket...")
-    const session = await connectCDP(target)
+    session = await connectCDP(target)
 
     console.log("[daemon] Enabling CDP domains...")
     await enableDomains(session)
     setupConsoleCapture(session)
 
     console.log("[daemon] Injecting translation script...")
-    await injectPersistentScript(session, state.injectionScript)
+    try {
+      await removeMatchingPersistentScripts(session, "__OPENCODE_ZH_INJECTION__")
+    } catch {
+      // Older Electron versions may not expose script enumeration.
+    }
+    if (state.persistentScriptId) {
+      try {
+        await removePersistentScript(session, state.persistentScriptId)
+      } catch {
+        // The old identifier may belong to a previous renderer target.
+      }
+      state.persistentScriptId = null
+    }
+    state.persistentScriptId = await injectPersistentScript(session, state.injectionScript)
 
     console.log("[daemon] Running injection on current page...")
     await evaluateScript(session, state.injectionScript)
@@ -173,16 +195,19 @@ async function connectAndInject(state: DaemonState): Promise<CDPSession | null> 
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error("[daemon] Connect/inject failed:", msg)
+    try { session?.close() } catch { /* ignore failed connection cleanup */ }
     return null
+  } finally {
+    state.connecting = false
   }
 }
 
 function scheduleReconnect(state: DaemonState): void {
-  if (!state.running || state.session || state.restarting || state.standby) return
+  if (!state.running || state.session || state.restarting || state.connecting || state.standby) return
 
   console.log(`[daemon] Reconnecting in ${state.reconnectDelay}ms...`)
   setTimeout(async () => {
-    if (!state.running || state.session || state.restarting || state.standby) return
+    if (!state.running || state.session || state.restarting || state.connecting || state.standby) return
 
     const alive = await checkCDPAlive(state.port)
     if (!alive) {
@@ -277,7 +302,11 @@ function setupHotReload(state: DaemonState): void {
 
         if (state.session) {
           try {
-            await injectPersistentScript(state.session, state.injectionScript)
+            if (state.persistentScriptId) {
+              await removePersistentScript(state.session, state.persistentScriptId).catch(() => {})
+              state.persistentScriptId = null
+            }
+            state.persistentScriptId = await injectPersistentScript(state.session, state.injectionScript)
             await evaluateScript(state.session, state.injectionScript)
             console.log("[daemon] Script re-injected into renderer")
           } catch (err) {
@@ -324,6 +353,8 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<void> {
     restartFailCount: 0,
     standby: false,
     restarting: false,
+    connecting: false,
+    persistentScriptId: null,
   }
 
   console.log("[daemon] Starting daemon mode on port", state.port)
@@ -383,7 +414,7 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<void> {
           state.restartFailCount = 0
           state.reconnectDelay = 1000
         }
-        if (!state.session && !state.restarting) {
+        if (!state.session && !state.restarting && !state.connecting) {
           const session = await connectAndInject(state)
           if (session) state.session = session
         }
