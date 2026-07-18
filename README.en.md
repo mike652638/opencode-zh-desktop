@@ -12,6 +12,16 @@ Companion package to [opencode-zh-plugin](https://www.npmjs.com/package/opencode
 
 [中文文档](./README.md)
 
+## Screenshots
+
+**Chinese menu bar**
+
+![Chinese menu bar](./assets/menu-zh.png)
+
+**Chinese settings page**
+
+![Chinese settings page](./assets/settings-zh.png)
+
 ## Architecture
 
 ```

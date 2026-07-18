@@ -12,6 +12,16 @@
 
 [English](./README.en.md)
 
+## 效果预览
+
+**菜单栏中文化**
+
+![菜单栏翻译](./assets/menu-zh.png)
+
+**设置页中文化**
+
+![设置页翻译](./assets/settings-zh.png)
+
 ## 架构
 
 ```
