@@ -111,21 +111,28 @@ export async function enableDomains(session: CDPSession): Promise<void> {
   await session.send("Runtime.enable")
 }
 
+/** Strip ANSI escape sequences from a string. */
+function stripAnsi(str: string): string {
+  // eslint-disable-next-line no-control-regex
+  return str.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "").replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, "")
+}
+
 /** Subscribe to console and exception events from the renderer. */
 export function setupConsoleCapture(session: CDPSession): void {
   session.ws.addEventListener("message", (event) => {
     const data = JSON.parse(event.data as string)
     if (data.method === "Runtime.consoleAPICalled") {
       const args = data.params?.args || []
-      const msg = args.map((a: { value?: unknown; description?: string }) => a.value ?? a.description ?? "").join(" ")
-      console.log("  [renderer console]", msg)
+      const raw = args.map((a: { value?: unknown; description?: string }) => a.value ?? a.description ?? "").join(" ")
+      const msg = stripAnsi(String(raw))
+      if (msg.trim()) console.log("  [renderer console]", msg)
     }
     if (data.method === "Runtime.exceptionThrown") {
       const details = data.params?.exceptionDetails
       if (details) {
-        console.error("  [renderer ERROR]", details.text)
+        console.error("  [renderer ERROR]", stripAnsi(details.text || ""))
         if (details.exception) {
-          console.error("   ", details.exception.description || details.exception.value || "")
+          console.error("   ", stripAnsi(details.exception.description || details.exception.value || ""))
         }
       }
     }
