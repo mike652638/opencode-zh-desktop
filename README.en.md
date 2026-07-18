@@ -16,11 +16,11 @@ Companion package to [opencode-zh-plugin](https://www.npmjs.com/package/opencode
 
 **Chinese menu bar**
 
-![Chinese menu bar](./assets/menu-zh.png)
+![Chinese menu bar](https://raw.githubusercontent.com/mike652638/opencode-zh-desktop/main/assets/menu-zh.png)
 
 **Chinese settings page**
 
-![Chinese settings page](./assets/settings-zh.png)
+![Chinese settings page](https://raw.githubusercontent.com/mike652638/opencode-zh-desktop/main/assets/settings-zh.png)
 
 ## Architecture
 

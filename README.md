@@ -16,11 +16,11 @@
 
 **菜单栏中文化**
 
-![菜单栏翻译](./assets/menu-zh.png)
+![菜单栏翻译](https://raw.githubusercontent.com/mike652638/opencode-zh-desktop/main/assets/menu-zh.png)
 
 **设置页中文化**
 
-![设置页翻译](./assets/settings-zh.png)
+![设置页翻译](https://raw.githubusercontent.com/mike652638/opencode-zh-desktop/main/assets/settings-zh.png)
 
 ## 架构
 
