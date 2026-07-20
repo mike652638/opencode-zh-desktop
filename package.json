@@ -1,9 +1,14 @@
 {
   "name": "opencode-zh-desktop",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "CDP-based Chinese locale injection for OpenCode Desktop — patches the Electron renderer at runtime via Chrome DevTools Protocol",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mike652638/opencode-zh-desktop.git"
+  },
+  "homepage": "https://github.com/mike652638/opencode-zh-desktop#readme",
   "keywords": [
     "opencode",
     "desktop",
