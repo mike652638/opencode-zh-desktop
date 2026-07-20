@@ -342,6 +342,7 @@ ${darkEntries}
         "body > *:not(#opencode-zh-background):not(#opencode-zh-glass):not(#opencode-zh-atmosphere) { position: relative; z-index: 3; }",
         ".bg-v2-background-bg-deep { background-color: color-mix(in srgb, var(--v2-background-bg-deep) 62%, transparent) !important; }",
         ".bg-v2-background-bg-base, .bg-background-base { background-color: color-mix(in srgb, var(--v2-background-bg-base) 72%, transparent) !important; }",
+        ".bg-v2-background-bg-base[class*='z-[70]'] { background-color: var(--v2-background-bg-base) !important; }",
         ".bg-background-stronger { background-color: color-mix(in srgb, var(--background-stronger) 76%, transparent) !important; }",
         "@keyframes opencode-zh-atmosphere-pulse { from { transform: scale(1); } to { transform: scale(1.04); } }",
         "@media (prefers-reduced-motion: reduce) { #opencode-zh-background, #opencode-zh-glass, #opencode-zh-atmosphere { transition: none; animation: none !important; } }",
