@@ -25,21 +25,27 @@ import {
   type CDPSession,
 } from "./connector.js"
 import { buildInjectionScript } from "./inject.js"
+import { buildThemeCleanupScript, buildThemeScriptFromFile } from "./theme-injector.js"
 
 export interface DaemonOptions {
   /** CDP port (default: 19222) */
   port?: number
   /** Path to OpenCode Desktop executable */
   exePath?: string
+  /** Remove proxy environment variables from the Desktop child process. */
+  noProxy?: boolean
   /** Poll interval in ms (default: 5000) */
   pollInterval?: number
   /** Maximum reconnect delay in ms (default: 30000) */
   maxReconnectDelay?: number
+  /** Path to a DesktopTheme JSON file to inject as CSS variable overrides. */
+  themePath?: string
 }
 
 interface DaemonState {
   port: number
   exePath?: string
+  noProxy: boolean
   pollInterval: number
   maxReconnectDelay: number
   session: CDPSession | null
@@ -55,6 +61,12 @@ interface DaemonState {
   connecting: boolean
   /** Persistent script registered on the current renderer target. */
   persistentScriptId: string | null
+  /** Theme injection script (null if no theme file specified). */
+  themeScript: string | null
+  /** Persistent script ID for the theme injection. */
+  persistentThemeScriptId: string | null
+  /** Path to the theme file being watched. */
+  themePath: string | null
 }
 
 const MAX_RESTART_FAILURES = 3
@@ -177,6 +189,27 @@ async function connectAndInject(state: DaemonState): Promise<CDPSession | null> 
     console.log("[daemon] Running injection on current page...")
     await evaluateScript(session, state.injectionScript)
 
+    // Inject theme CSS overrides if a theme file is configured
+    if (state.themeScript) {
+      console.log("[daemon] Injecting theme CSS overrides...")
+      try {
+        await removeMatchingPersistentScripts(session, "__OPENCODE_ZH_THEME__")
+      } catch {
+        // Older Electron versions may not expose script enumeration.
+      }
+      if (state.persistentThemeScriptId) {
+        try {
+          await removePersistentScript(session, state.persistentThemeScriptId)
+        } catch {
+          // The old identifier may belong to a previous renderer target.
+        }
+        state.persistentThemeScriptId = null
+      }
+      state.persistentThemeScriptId = await injectPersistentScript(session, state.themeScript)
+      await evaluateScript(session, state.themeScript)
+      console.log("[daemon] Theme injection complete")
+    }
+
     console.log("[daemon] Injection complete")
     state.reconnectDelay = 1000
 
@@ -239,6 +272,7 @@ async function tryRestartDesktop(state: DaemonState): Promise<void> {
     const result = await launchDesktop({
       port: state.port,
       exePath: state.exePath,
+      noProxy: state.noProxy,
       onExit: (code, signal) => handleDesktopExit(state, code, signal),
     })
     console.log("[daemon] Desktop restarted, PID:", result.pid)
@@ -325,6 +359,57 @@ function setupHotReload(state: DaemonState): void {
   } catch {
     // File might not exist yet
   }
+
+  // Watch theme file for hot-reload
+  if (state.themePath) {
+    try {
+      const themeFileName = path.basename(state.themePath)
+      const themeWatcher = watch(path.dirname(state.themePath), { recursive: false }, async (eventType, changedFile) => {
+        if (eventType !== "change" && eventType !== "rename") return
+        if (changedFile && String(changedFile) !== themeFileName) return
+        console.log("[daemon] Theme file changed, reloading...")
+        try {
+          if (!existsSync(state.themePath!)) {
+            state.themeScript = null
+            if (state.session) {
+              await evaluateScript(state.session, buildThemeCleanupScript())
+              if (state.persistentThemeScriptId) {
+                await removePersistentScript(state.session, state.persistentThemeScriptId).catch(() => {})
+                state.persistentThemeScriptId = null
+              }
+            }
+            console.log("[daemon] Theme file removed, default appearance restored")
+            return
+          }
+          state.themeScript = buildThemeScriptFromFile(state.themePath!)
+          console.log("[daemon] Theme script reloaded, length:", state.themeScript.length)
+
+          if (state.session) {
+            try {
+              if (state.persistentThemeScriptId) {
+                await removePersistentScript(state.session, state.persistentThemeScriptId).catch(() => {})
+                state.persistentThemeScriptId = null
+              }
+              state.persistentThemeScriptId = await injectPersistentScript(state.session, state.themeScript)
+              await evaluateScript(state.session, state.themeScript)
+              console.log("[daemon] Theme re-injected into renderer")
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : String(err)
+              console.error("[daemon] Theme re-injection failed:", msg)
+              state.session = null
+              scheduleReconnect(state)
+            }
+          }
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err)
+          console.error("[daemon] Theme reload failed:", msg)
+        }
+      })
+      state.watchers.push(themeWatcher)
+    } catch {
+      // Theme file might not exist yet
+    }
+  }
 }
 
 export async function startDaemon(opts: DaemonOptions = {}): Promise<void> {
@@ -343,6 +428,7 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<void> {
   const state: DaemonState = {
     port,
     exePath: opts.exePath,
+    noProxy: opts.noProxy ?? false,
     pollInterval: opts.pollInterval ?? 5000,
     maxReconnectDelay: opts.maxReconnectDelay ?? 30000,
     session: null,
@@ -355,12 +441,28 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<void> {
     restarting: false,
     connecting: false,
     persistentScriptId: null,
+    themeScript: null,
+    persistentThemeScriptId: null,
+    themePath: opts.themePath ?? null,
   }
 
   console.log("[daemon] Starting daemon mode on port", state.port)
 
   state.injectionScript = buildInjectionScript()
   console.log("[daemon] Injection script loaded, length:", state.injectionScript.length)
+
+  // Load theme script if a theme file path was provided
+  if (state.themePath) {
+    try {
+      state.themeScript = buildThemeScriptFromFile(state.themePath)
+      console.log("[daemon] Theme script loaded, length:", state.themeScript.length)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error("[daemon] Failed to load theme file:", msg)
+      console.log("[daemon] Continuing without theme injection")
+      state.themePath = null
+    }
+  }
 
   const alive = await checkCDPAlive(state.port)
   if (alive) {
@@ -377,6 +479,7 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<void> {
       const result = await launchDesktop({
         port: state.port,
         exePath: state.exePath,
+        noProxy: state.noProxy,
         onExit: (code, signal) => handleDesktopExit(state, code, signal),
       })
       console.log("[daemon] Desktop launched, PID:", result.pid)

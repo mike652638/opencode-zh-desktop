@@ -22,6 +22,10 @@ Companion package to [opencode-zh-plugin](https://www.npmjs.com/package/opencode
 
 ![Chinese settings page](https://raw.githubusercontent.com/mike652638/opencode-zh-desktop/main/assets/settings-zh.png)
 
+**Custom theme (background image + glass layer + atmosphere glow + grid texture)**
+
+![Custom theme](https://raw.githubusercontent.com/mike652638/opencode-zh-desktop/main/assets/custom-theme.png)
+
 ## Architecture
 
 ```
@@ -74,6 +78,12 @@ Keeps injection alive across Desktop restarts:
 opencode-zh-desktop --daemon
 ```
 
+To launch Desktop without inheriting system proxy variables, use:
+
+```bash
+opencode-zh-desktop --daemon --no-proxy
+```
+
 ### Options
 
 | Flag | Description | Default |
@@ -82,8 +92,50 @@ opencode-zh-desktop --daemon
 | `--exe <path>` | Path to OpenCode.exe | Auto-detected |
 | `--no-relaunch` | Connect to running instance, don't restart | `false` |
 | `--force-relaunch` | Force restart even when CDP is available | `false` |
+| `--no-proxy` | Remove proxy environment variables when launching Desktop | `false` |
 | `--daemon` | Keep alive, auto-restart Desktop | `false` |
+| `--theme <file>` | Load and inject a custom theme JSON | — |
 | `--version`, `-v` | Show version | — |
+
+## Theme Management
+
+The first phase provides pure theme management without modifying the OpenCode installation or requiring CDP:
+
+```bash
+opencode-zh-desktop theme list            # List built-in presets
+opencode-zh-desktop theme detect           # Detect theme directories
+opencode-zh-desktop theme export sea-breeze --out sea-breeze.json
+opencode-zh-desktop theme import sea-breeze.json
+opencode-zh-desktop theme set-color sea-breeze.json dark text-base '#d7e8f5'
+opencode-zh-desktop theme contrast sea-breeze.json
+opencode-zh-desktop theme assets sea-breeze.json
+opencode-zh-desktop --daemon --theme sea-breeze.json
+opencode-zh-desktop theme reset
+```
+
+### Visual Themes
+
+Theme files can include `visuals` in `light`/`dark` variants, and per-page overrides via the top-level `pages` key:
+
+```json
+{
+  "light": {
+    "visuals": {
+      "backgroundImage": "assets/home-light.jpg",
+      "glassOpacity": 0.42,
+      "glassBlur": 18,
+      "atmosphere": true,
+      "atmosphereOpacity": 0.65
+    }
+  },
+  "pages": {
+    "session": { "glassOpacity": 0.5 },
+    "settings": { "atmosphere": false }
+  }
+}
+```
+
+Visual layers are independent DOM nodes with `pointer-events: none` and never replace native controls. Respects `prefers-reduced-transparency` and `forced-colors` for accessibility. `theme reset` cleans up all visual layers, glass, atmosphere, and CSS injections at runtime.
 
 ## Translation Coverage
 
@@ -138,6 +190,7 @@ Uses **Chrome DevTools Protocol** to attach to OpenCode Desktop's Electron rende
 - **Electron menus**: The Go / Window menu is native OS rendering, not DOM
 - **Version dependent**: Upstream UI changes may break text matching
 - **Terminal safety**: An existing CDP instance is reused by default, avoiding Desktop restarts that can disturb an active TUI; use `--force-relaunch` only when explicitly needed
+- **Proxy isolation**: `--no-proxy` only removes proxy variables from newly launched Desktop processes; it does not change the daemon or system environment
 
 ## Development
 

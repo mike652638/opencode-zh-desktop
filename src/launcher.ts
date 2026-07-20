@@ -17,6 +17,7 @@ export interface LaunchOptions {
   exePath?: string
   timeout?: number
   forceRelaunch?: boolean
+  noProxy?: boolean
   onExit?: (code: number | null, signal: NodeJS.Signals | null) => void
 }
 
@@ -134,10 +135,17 @@ export async function launchDesktop(opts: LaunchOptions = {}): Promise<LaunchRes
   await killDesktop()
 
   const args = [`--remote-debugging-port=${port}`]
+  const env = { ...process.env }
+  if (opts.noProxy) {
+    for (const name of ["HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"]) {
+      delete env[name]
+    }
+  }
   const child = spawn(exePath, args, {
     detached: true,
     stdio: "ignore",
     windowsHide: false,
+    env,
   })
   if (opts.onExit) {
     child.once("exit", opts.onExit)
